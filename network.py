@@ -10,7 +10,7 @@ class Network:
 
     def add_user(self, user_id, friends):
         
-        # Generate public and private key for user
+        # Generate RSA keys for user
         pub_key = None
         priv_key = None
 
@@ -26,10 +26,16 @@ class Network:
         # Create a message from sender to receiver with the given content
         message = (sender_id, receiver_id, {"metadata": metadata, "message": message})
 
-    def encrypt(self, message, public_key):
+    def encrypt(self, message, pub_key):
         pass
 
-    def generate_prime(self, bits):
+    def decrypt(self, message, priv_key):
+        pass
+
+    def generate_keys(self):
+        pass
+    
+    def generate_prime(self):
         pass
 
     def primality_check(self, n):
