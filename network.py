@@ -26,19 +26,33 @@ class Network:
         
 
 
-    def encrypted_message(self, sender_id, receiver_id, message, metadata = None):
+    def encrypt_message(self, sender_id, receiver_id, message, metadata = None):
         # Create a message from sender to receiver with the given content
-        message = (sender_id, receiver_id, {"metadata": metadata, "message": message})
+        message = (sender_id, receiver_id, {"metadata": metadata, "message": self.encrypt(message, self.users[receiver_id].pub_key)})
+        return message
+    
+    def decrypt_message(self, message):
+        sender_id, receiver_id, body = message
+        decrypted_message = self.decrypt(body["message"], self.users[receiver_id].priv_key)
+        return decrypted_message
 
-    def encrypt(self, message, pub_key):
-        pass
+    def encrypt(self, message, key):
+        encoded_bytes = message.encode('utf-8')
+        encoded_int = int.from_bytes(encoded_bytes, byteorder='big')
+        encrypted_int = self.mod_exp(encoded_int, key[1], key[0])
+        return encrypted_int
 
-    def decrypt(self, message, priv_key):
-        pass
+    def decrypt(self, message, key):
+        decrypted_int = self.mod_exp(message, key[1], key[0])
+
+        # Adds 7 bits of padding to bit length to ensure proper rounding to bytes with integer division
+        decrypted_bytes = decrypted_int.to_bytes((decrypted_int.bit_length() + 7) // 8, byteorder='big')
+        decrypted_message = decrypted_bytes.decode('utf-8')
+        return decrypted_message
 
     def generate_rsa_keys(self):
         """
-        Generates an RSA key pair.
+        Generates public and private RSA keys.
         """
 
         # Generate two distinct prime numbers
@@ -48,7 +62,7 @@ class Network:
         # Calculate n = p * q
         n = p * q
 
-        # Calculate phi(n) = (p - 1)(q - 1)
+        # Calculate Euler's totient phi(n)
         phi = (p - 1) * (q - 1)
 
         # Generate public and private exponents
