@@ -7,7 +7,7 @@ class Network:
     def __init__(self):
         self.users = {}  # Dictionary of user objects with user.id as key
         self.public_keys = {}  # Dictionary of public keys with user.id as key
-        self.edges = set()  # List of directed edges
+        self.edges = set()  # Set of edges between users
         self.used_primes = set()  # Set of primes that have been used for RSA
 
 
@@ -56,13 +56,17 @@ class Network:
         return encrypted_int
 
     def decrypt(self, message, key):
-        decrypted_int = self.mod_exp(message, key[1], key[0])
+        
+        try:
+            decrypted_int = self.mod_exp(message, key[1], key[0])
 
-        # Adds 7 bits of padding to bit length to ensure proper rounding to bytes with integer division
-        decrypted_bytes = decrypted_int.to_bytes((decrypted_int.bit_length() + 7) // 8, byteorder='big')
-        decrypted_message = decrypted_bytes.decode('utf-8')
-        return decrypted_message
-
+            # Adds 7 bits of padding to bit length to ensure proper rounding to bytes with integer division by 8
+            decrypted_bytes = decrypted_int.to_bytes((decrypted_int.bit_length() + 7) // 8, byteorder='big')
+            decrypted_message = decrypted_bytes.decode('utf-8')
+            return decrypted_message
+        except UnicodeDecodeError as e:
+            print("Incorrect key used for decryption: ", e)
+            
     def generate_rsa_keys(self):
         """
         Generates public and private RSA keys.
