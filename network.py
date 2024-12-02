@@ -1,6 +1,7 @@
 from user import User
 import math
 import random
+import hashlib
 
 class Network:
     def __init__(self):
@@ -22,18 +23,30 @@ class Network:
         # Adds unique edges between the user and their friends
         for friend in friends:
             self.edges.add(tuple(sorted((user_id, friend))))
-
-        
-
-
-    def encrypt_message(self, sender_id, receiver_id, message, metadata = None):
-        # Create a message from sender to receiver with the given content
-        message = (sender_id, receiver_id, {"metadata": metadata, "message": self.encrypt(message, self.users[receiver_id].pub_key)})
-        return message
     
+    def encrypt_message(self, sender_id, receiver_id, message, metadata=None):
+        # Sign the message using the sender's private key
+        signature = self.sign_message(message, self.users[sender_id].priv_key)
+        
+        # Encrypt the message using the receiver's public key
+        encrypted_message = self.encrypt(message, self.users[receiver_id].pub_key)
+        
+        # Return the signed and encrypted message
+        return (sender_id, receiver_id, {"metadata": metadata, "message": encrypted_message, "signature": signature})
+
     def decrypt_message(self, message):
         sender_id, receiver_id, body = message
+        
+        # Decrypt the message
         decrypted_message = self.decrypt(body["message"], self.users[receiver_id].priv_key)
+        
+        # Verify the signature
+        is_valid = self.verify_signature(decrypted_message, body["signature"], self.users[sender_id].pub_key)
+        
+        if not is_valid:
+            raise ValueError("Signature verification failed! The message may have been tampered with.")
+        
+        # Return the decrypted and validated message
         return decrypted_message
 
     def encrypt(self, message, key):
@@ -146,4 +159,24 @@ class Network:
             return (d, x, y)
 
     def sign_message(self, message, priv_key):
-        pass
+        # Hash the message using SHA-256
+        message_hash = hashlib.sha256(message.encode('utf-8')).hexdigest()
+        
+        # Convert the hash to an integer
+        hash_int = int(message_hash, 16)
+        
+        # Sign the hash by encrypting it with the sender's private key
+        signature = self.mod_exp(hash_int, priv_key[1], priv_key[0])
+        
+        return signature
+
+    def verify_signature(self, message, signature, pub_key):
+        # Decrypt the signature using the sender's public key
+        decrypted_hash_int = self.mod_exp(signature, pub_key[1], pub_key[0])
+        
+        # Hash the message using SHA-256
+        message_hash = hashlib.sha256(message.encode('utf-8')).hexdigest()
+        hash_int = int(message_hash, 16)
+        
+        # Compare the decrypted hash with the recomputed hash
+        return decrypted_hash_int == hash_int
