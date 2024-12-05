@@ -49,6 +49,35 @@ class Network:
         # Return the decrypted and validated message
         return decrypted_message
 
+    def confirm_signed_message(self, sender_id, receiver_id, original_message_tuple):
+        # Extract original message details
+        original_sender = original_message_tuple[0]
+        original_receiver = original_message_tuple[1]
+        original_message = original_message_tuple[2]["message"]
+        original_signature = original_message_tuple[2]["signature"]
+        
+        # Decrypt the original message to get the plain text
+        original_plaintext = self.decrypt_message(original_message_tuple)
+        
+        # Create a confirmation message
+        confirmation_message = f"Received and validated message from {original_sender}"
+        
+        # Hash the confirmation message
+        confirmation_hash = hashlib.sha256(confirmation_message.encode()).digest()
+        
+        # Encrypt the hash of the confirmation message with the receiver's private key
+        confirmation_signature = self.sign_message(confirmation_message, self.users[sender_id].priv_key)
+
+        # Return the confirmation message with additional metadata
+        return (sender_id, receiver_id, {
+            "original_message": original_message,
+            "original_signature": original_signature,
+            "original_hash": hashlib.sha256(original_plaintext.encode()).hexdigest(),
+            "confirmation_message": confirmation_message,
+            "confirmation_signature": confirmation_signature,
+            "confirmation_hash": hashlib.sha256(confirmation_message.encode()).hexdigest(),
+        })
+
     def encrypt(self, message, key):
         encoded_bytes = message.encode('utf-8')
         encoded_int = int.from_bytes(encoded_bytes, byteorder='big')
@@ -184,3 +213,4 @@ class Network:
         
         # Compare the decrypted hash with the recomputed hash
         return decrypted_hash_int == hash_int
+
