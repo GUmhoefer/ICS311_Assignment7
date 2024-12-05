@@ -12,7 +12,7 @@ To create a network:
 network_name = net.Network()
 
 To add a user:
-network_name.add_user("Username", [List of friends' usernames])
+\nnetwork_name.add_user("Username", [List of friends' usernames])
 
 To send an encrypted and sign a message:
 
